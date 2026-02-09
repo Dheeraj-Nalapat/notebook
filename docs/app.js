@@ -1,5 +1,4 @@
 // Auto-discover markdown files using GitHub API
-// No manual updates needed - files are discovered automatically when the page loads
 const REPO_OWNER = 'dheeraj-nalapat';
 const REPO_NAME = 'notebook';
 const BRANCH = 'main'; // Change this if your default branch is different (e.g., 'master')
@@ -61,21 +60,35 @@ async function fetchMarkdownFiles(folderPath, basePath = '') {
 // Discover all markdown files
 async function discoverFiles() {
     const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const emptyStateEl = document.getElementById('emptyState');
+
+    if (!loadingEl) {
+        console.error('Loading element not found');
+        return;
+    }
+
     loadingEl.textContent = 'Discovering files...';
     loadingEl.classList.remove('hidden');
+    if (errorEl) errorEl.classList.add('hidden');
+    if (emptyStateEl) emptyStateEl.classList.add('hidden');
 
     try {
+        console.log('Fetching files from GitHub API...');
         // Fetch files from both folders in parallel
         const [agentReports, brain] = await Promise.all([
             fetchMarkdownFiles('Agent_Reports'),
             fetchMarkdownFiles('Brain')
         ]);
 
+        console.log('Agent Reports found:', agentReports.length);
+        console.log('Brain files found:', brain.length);
+
         // Process Agent Reports - remove 'Agent_Reports/' prefix from folder
         fileManifest.agentReports = agentReports.map(file => ({
             name: file.name,
             path: file.path,
-            folder: file.folder.replace(/^Agent_Reports\//, '').replace(/^Agent_Reports$/, '')
+            folder: file.folder ? file.folder.replace(/^Agent_Reports\//, '').replace(/^Agent_Reports$/, '') : ''
         }));
 
         // Process Brain files - remove 'Brain/' prefix from folder
@@ -101,11 +114,21 @@ async function discoverFiles() {
         renderFileList();
         setupMainSectionToggles();
 
+        // Show empty state if no files found
+        if (fileManifest.agentReports.length === 0 && fileManifest.brain.length === 0) {
+            if (emptyStateEl) {
+                emptyStateEl.classList.remove('hidden');
+                emptyStateEl.querySelector('p').textContent = 'No markdown files found.';
+            }
+        }
+
     } catch (error) {
         console.error('Error discovering files:', error);
         loadingEl.classList.add('hidden');
-        document.getElementById('error').classList.remove('hidden');
-        document.getElementById('error').textContent = `Error discovering files: ${error.message}`;
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            errorEl.textContent = `Error discovering files: ${error.message}`;
+        }
     }
 }
 
@@ -153,8 +176,27 @@ function buildFileTree(files) {
     return tree;
 }
 
+// Theme management
+function initTheme() {
+    // Get saved theme or default to light
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.className = `theme-${savedTheme}`;
+
+    // Setup theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.className = `theme-${newTheme}`;
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     discoverFiles();
     setupSearch();
 });
@@ -181,8 +223,11 @@ function renderFileTree(container, tree, level = 0) {
                 a.textContent = file.name;
                 a.dataset.path = file.path;
                 a.className = 'file-link';
+                // Proper indentation: level * 16 + 40px (files are more indented than folders)
+                a.style.paddingLeft = `${level * 16 + 40}px`;
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
+                    console.log('Nested file clicked:', file.name, file.path);
                     loadFile(getRawUrl(file.path), a);
                 });
                 li.appendChild(a);
@@ -210,13 +255,14 @@ function renderFileTree(container, tree, level = 0) {
 
             const folderHeader = document.createElement('div');
             folderHeader.className = 'folder-header';
+            // Proper indentation: level * 16 + 16px
+            folderHeader.style.paddingLeft = `${level * 16 + 16}px`;
             folderHeader.appendChild(folderToggle);
             folderHeader.appendChild(folderName);
 
             const folderContent = document.createElement('ul');
             folderContent.className = 'file-list nested';
             folderContent.style.display = 'none'; // Collapsed by default
-            folderContent.style.paddingLeft = `${(level + 1) * 1}rem`;
 
             folderItem.appendChild(folderHeader);
             folderItem.appendChild(folderContent);
@@ -233,9 +279,19 @@ function renderFileList() {
     const agentReportsList = document.getElementById('agentReportsList');
     const brainList = document.getElementById('brainList');
 
+    if (!agentReportsList || !brainList) {
+        console.error('File list containers not found');
+        return;
+    }
+
     // Clear existing content
     agentReportsList.innerHTML = '';
     brainList.innerHTML = '';
+
+    console.log('Rendering file list...', {
+        agentReports: fileManifest.agentReports.length,
+        brain: fileManifest.brain.length
+    });
 
     // Render Agent Reports (flat structure)
     fileManifest.agentReports.forEach(file => {
@@ -246,8 +302,11 @@ function renderFileList() {
         a.textContent = file.name;
         a.dataset.path = file.path;
         a.className = 'file-link';
+        // Level 0 files: 0 * 16 + 40 = 40px
+        a.style.paddingLeft = '40px';
         a.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('File clicked:', file.name, file.path);
             loadFile(getRawUrl(file.path), a);
         });
         li.appendChild(a);
@@ -257,6 +316,8 @@ function renderFileList() {
     // Render Brain files (nested structure)
     const brainTree = buildFileTree(fileManifest.brain);
     renderFileTree(brainList, brainTree);
+
+    console.log('File list rendered');
 }
 
 // Setup search functionality
@@ -378,6 +439,16 @@ function expandParentFolders(element) {
 
 // Load and display markdown file
 async function loadFile(filePath, linkElement) {
+    const loadingEl = document.getElementById('loading');
+    const errorEl = document.getElementById('error');
+    const emptyStateEl = document.getElementById('emptyState');
+    const markdownContentEl = document.getElementById('markdownContent');
+
+    if (!loadingEl || !markdownContentEl) {
+        console.error('Required elements not found');
+        return;
+    }
+
     // Update active state
     document.querySelectorAll('.file-link').forEach(a => a.classList.remove('active'));
     if (linkElement) {
@@ -387,12 +458,13 @@ async function loadFile(filePath, linkElement) {
     }
 
     // Show loading state
-    document.getElementById('loading').classList.remove('hidden');
-    document.getElementById('error').classList.add('hidden');
-    document.getElementById('emptyState').classList.add('hidden');
-    document.getElementById('markdownContent').innerHTML = '';
+    loadingEl.classList.remove('hidden');
+    if (errorEl) errorEl.classList.add('hidden');
+    if (emptyStateEl) emptyStateEl.classList.add('hidden');
+    markdownContentEl.innerHTML = '';
 
     try {
+        console.log('Loading file:', filePath);
         const response = await fetch(filePath);
 
         if (!response.ok) {
@@ -400,6 +472,7 @@ async function loadFile(filePath, linkElement) {
         }
 
         const markdown = await response.text();
+        console.log('File loaded successfully, length:', markdown.length);
 
         // Configure marked options
         marked.setOptions({
@@ -412,20 +485,54 @@ async function loadFile(filePath, linkElement) {
         // Convert markdown to HTML
         const html = marked.parse(markdown);
 
-        // Display content
-        document.getElementById('markdownContent').innerHTML = html;
+        // Get file name from path
+        let fileName = linkElement ? linkElement.textContent : filePath.split('/').pop();
+        // Remove .md extension if present
+        if (fileName.endsWith('.md')) {
+            fileName = fileName.slice(0, -3);
+        }
+
+        // Wrap content in styled container
+        const wrapper = document.createElement('div');
+        wrapper.className = 'markdown-content-wrapper';
+
+        // Add file name header
+        const header = document.createElement('div');
+        header.className = 'markdown-header';
+        const title = document.createElement('h2');
+        title.className = 'markdown-title';
+        title.textContent = fileName;
+        header.appendChild(title);
+
+        // Add content
+        const content = document.createElement('div');
+        content.className = 'markdown-body';
+        content.innerHTML = html;
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(content);
+
+        // Clear and add wrapped content
+        const contentEl = document.getElementById('markdownContent');
+        contentEl.innerHTML = '';
+        contentEl.appendChild(wrapper);
 
         // Hide loading state
-        document.getElementById('loading').classList.add('hidden');
+        loadingEl.classList.add('hidden');
 
         // Scroll to top
-        document.querySelector('.content-area').scrollTop = 0;
+        const contentArea = document.querySelector('.content-area');
+        if (contentArea) {
+            contentArea.scrollTop = 0;
+        }
 
     } catch (error) {
         console.error('Error loading file:', error);
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('error').classList.remove('hidden');
-        document.getElementById('error').textContent = `Error loading file: ${error.message}`;
+        loadingEl.classList.add('hidden');
+        if (errorEl) {
+            errorEl.classList.remove('hidden');
+            errorEl.textContent = `Error loading file: ${error.message}`;
+        }
     }
 }
 

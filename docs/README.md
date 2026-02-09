@@ -43,18 +43,26 @@ Then open `http://localhost:8000` in your browser.
 
 ## Adding New Files
 
-**No action needed!** The website automatically discovers all markdown files when it loads.
+**After adding new markdown files, you need to regenerate the manifest:**
 
-The site uses GitHub's API to:
-- Automatically scan the `Agent_Reports` and `Brain` folders
-- Find all `.md` files recursively
-- Display them with the correct folder structure
-- Update in real-time when you add new files
+1. Add your markdown files to the `Agent_Reports` or `Brain` folders
+2. Run the manifest generator:
+   ```bash
+   node docs/generate-manifest.js
+   ```
+3. Commit and push both the new files and the updated `manifest.json` to GitHub
 
-Just add your markdown files to the folders and push to GitHub. The website will automatically show them on the next page load!
+The website loads files from a static `manifest.json` file to avoid GitHub API rate limiting and CORS issues.
+
+### Why use a manifest file?
+
+- **No API rate limits**: GitHub API has strict rate limits that can cause 403 errors
+- **No CORS issues**: Static files work perfectly on GitHub Pages
+- **Faster loading**: No need to make multiple API calls
+- **More reliable**: Works consistently without authentication
 
 ### Note
 
-- Files are discovered using GitHub's public API (no authentication needed for public repos)
-- The site fetches files when the page loads
+- The manifest file (`manifest.json`) contains a list of all markdown files
 - Main sections (Agent Reports and Brain) are collapsible - click the arrow to expand/collapse
+- Files are still loaded from GitHub's raw content API (no rate limits for raw content)
