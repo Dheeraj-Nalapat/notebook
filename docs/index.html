@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook - Markdown Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Notebook</h1>
+            <p>Browse Agent Reports and Brain files</p>
+        </header>
+
+        <div class="main-content">
+            <nav class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search files...">
+                </div>
+
+                <div class="folder-section">
+                    <h2>Agent Reports</h2>
+                    <ul id="agentReportsList" class="file-list"></ul>
+                </div>
+
+                <div class="folder-section">
+                    <h2>Brain</h2>
+                    <ul id="brainList" class="file-list"></ul>
+                </div>
+            </nav>
+
+            <main class="content-area">
+                <div id="loading" class="loading hidden">Loading...</div>
+                <div id="error" class="error hidden"></div>
+                <div id="markdownContent" class="markdown-content"></div>
+                <div id="emptyState" class="empty-state">
+                    <p>Select a file from the sidebar to view its content</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
