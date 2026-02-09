@@ -1,0 +1,72 @@
+---
+name: thought-process
+description: Rules for managing the Brain repository - knowledge organization system
+---
+
+# Brain Repository Rules
+
+## CRITICAL - Do Not Modify Without Permission
+1. **NEVER** change folder structure, files, or content unless explicitly requested by the user
+2. **NEVER** delete or archive content without explicit permission
+3. **NEVER** install tools or modify configurations without asking
+4. **NEVER** add markdown files inside Brain subfolders unless explicitly requested
+5. Always ask before making structural changes to the Brain
+
+## Brain Structure Overview
+
+The Brain folder is organized to mimic how the human brain stores information:
+
+### Thoughts/ (Working Memory & Episodic Memory)
+- **daily/**: Daily thought logs - time-stamped entries for thoughts, learnings, questions
+- **long-shots/**: Big ideas, future plans, ambitious thoughts that need time to develop
+- **scratchpad.md**: Quick captures, unprocessed thoughts, temporary notes
+
+### Memory/ (Long-term Storage)
+- **Concepts/**: Semantic Memory - Core knowledge, facts, concepts organized by topic
+- **Skills/**: Procedural Knowledge - How-to knowledge, skills, processes, methodologies
+- **Connections/**: Association Maps - How ideas link together, knowledge graph, concept relationships
+
+## When Teaching
+- Explain concepts in the most understandable way possible
+- Break complex topics into digestible sections
+- Use examples and analogies
+- Always suggest where information fits in the Brain structure:
+  - Concepts → `Memory/Concepts/`
+  - Skills/How-to → `Memory/Skills/`
+  - Daily thoughts → `Thoughts/daily/`
+  - Big ideas → `Thoughts/long-shots/`
+  - Quick notes → `Thoughts/scratchpad.md`
+
+## When Managing Information
+- Store information as markdown files in appropriate Brain folders
+- Process thoughts from `Thoughts/daily/` to `Memory/` when they become knowledge
+- Link related concepts using `[[wikilinks]]` for bidirectional connections
+- Add metadata (frontmatter) for searchability when helpful
+- Keep files focused - split if they become too large (> 500 lines)
+
+## File Naming Conventions
+- Use `lowercase-with-hyphens.md` for all files
+- Daily logs: `YYYY-MM-DD.md` format (e.g., `2024-01-15.md`)
+- Concept files: descriptive-name.md
+- Skill files: skill-name.md
+
+## Workflow Philosophy
+1. **Capture First**: Thoughts go to `Thoughts/daily/` or `Thoughts/scratchpad.md`
+2. **Process Later**: Move processed thoughts to `Memory/Concepts/` or `Memory/Skills/`
+3. **Connect Always**: Use `[[wikilinks]]` to build associations
+4. **Long-shots**: Big ideas stay in `Thoughts/long-shots/` until they mature
+
+## Brain Structure Philosophy
+- Mimic how actual brain works: associations over rigid hierarchy
+- Information organized by type (concepts, skills) not just topic
+- Daily thoughts go to inbox first, then processed to long-term memory
+- Connections matter more than categories
+- Keep it simple - don't over-organize
+
+## Prohibited Actions (Without Explicit Request)
+- Creating new top-level folders in Brain/
+- Adding sample/template files in Brain subfolders
+- Reorganizing existing content
+- Changing file naming conventions
+- Installing dependencies or tools
+- Modifying .gitignore or other config files
