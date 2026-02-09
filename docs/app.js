@@ -1,5 +1,5 @@
-// File manifest - all markdown files in Agent_Reports and Brain folders
-// Using GitHub raw content API since GitHub Pages only serves files from /docs folder
+// Auto-discover markdown files using GitHub API
+// No manual updates needed - files are discovered automatically when the page loads
 const REPO_OWNER = 'dheeraj-nalapat';
 const REPO_NAME = 'notebook';
 const BRANCH = 'main'; // Change this if your default branch is different (e.g., 'master')
@@ -8,22 +8,127 @@ const getRawUrl = (filePath) => {
     return `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${filePath}`;
 };
 
-// File manifest with folder structure preserved
-const fileManifest = {
-    agentReports: [
-        { name: 'AGENT_SCRATCHPAD.md', path: 'Agent_Reports/AGENT_SCRATCHPAD.md', folder: '' },
-        { name: 'agent-builder-beta-migration-script-report.md', path: 'Agent_Reports/agent-builder-beta-migration-script-report.md', folder: '' },
-        { name: 'agent-builder-beta-migration-worker-report.md', path: 'Agent_Reports/agent-builder-beta-migration-worker-report.md', folder: '' }
-    ],
-    brain: [
-        { name: 'README.md', path: 'Brain/Memory/Concepts/README.md', folder: 'Memory/Concepts' },
-        { name: 'README.md', path: 'Brain/Memory/Connections/README.md', folder: 'Memory/Connections' },
-        { name: 'README.md', path: 'Brain/Memory/Skills/README.md', folder: 'Memory/Skills' },
-        { name: 'README.md', path: 'Brain/Thoughts/daily/README.md', folder: 'Thoughts/daily' },
-        { name: 'README.md', path: 'Brain/Thoughts/long-shots/README.md', folder: 'Thoughts/long-shots' },
-        { name: 'scratchpad.md', path: 'Brain/Thoughts/scratchpad.md', folder: 'Thoughts' }
-    ]
+const getApiUrl = (path = '') => {
+    return `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`;
 };
+
+// Store discovered files
+let fileManifest = {
+    agentReports: [],
+    brain: []
+};
+
+// Fetch markdown files recursively from GitHub API
+async function fetchMarkdownFiles(folderPath, basePath = '') {
+    const files = [];
+
+    try {
+        const response = await fetch(getApiUrl(folderPath));
+        if (!response.ok) {
+            if (response.status === 404) {
+                return files; // Folder doesn't exist
+            }
+            throw new Error(`Failed to fetch ${folderPath}: ${response.status}`);
+        }
+
+        const items = await response.json();
+
+        for (const item of items) {
+            if (item.type === 'file' && item.name.endsWith('.md')) {
+                const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
+                const folder = basePath;
+                files.push({
+                    name: item.name,
+                    path: `${folderPath}/${item.name}`,
+                    folder: folder
+                });
+            } else if (item.type === 'dir') {
+                // Recursively fetch from subdirectories
+                const subFiles = await fetchMarkdownFiles(
+                    `${folderPath}/${item.name}`,
+                    basePath ? `${basePath}/${item.name}` : item.name
+                );
+                files.push(...subFiles);
+            }
+        }
+    } catch (error) {
+        console.error(`Error fetching ${folderPath}:`, error);
+    }
+
+    return files;
+}
+
+// Discover all markdown files
+async function discoverFiles() {
+    const loadingEl = document.getElementById('loading');
+    loadingEl.textContent = 'Discovering files...';
+    loadingEl.classList.remove('hidden');
+
+    try {
+        // Fetch files from both folders in parallel
+        const [agentReports, brain] = await Promise.all([
+            fetchMarkdownFiles('Agent_Reports'),
+            fetchMarkdownFiles('Brain')
+        ]);
+
+        // Process Agent Reports - remove 'Agent_Reports/' prefix from folder
+        fileManifest.agentReports = agentReports.map(file => ({
+            name: file.name,
+            path: file.path,
+            folder: file.folder.replace(/^Agent_Reports\//, '').replace(/^Agent_Reports$/, '')
+        }));
+
+        // Process Brain files - remove 'Brain/' prefix from folder
+        fileManifest.brain = brain.map(file => {
+            const folderPath = file.path.replace(/^Brain\//, '').replace(/\/[^/]+\.md$/, '');
+            return {
+                name: file.name,
+                path: file.path,
+                folder: folderPath
+            };
+        });
+
+        // Sort files
+        fileManifest.agentReports.sort((a, b) => a.name.localeCompare(b.name));
+        fileManifest.brain.sort((a, b) => {
+            if (a.folder !== b.folder) {
+                return a.folder.localeCompare(b.folder);
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        loadingEl.classList.add('hidden');
+        renderFileList();
+        setupMainSectionToggles();
+
+    } catch (error) {
+        console.error('Error discovering files:', error);
+        loadingEl.classList.add('hidden');
+        document.getElementById('error').classList.remove('hidden');
+        document.getElementById('error').textContent = `Error discovering files: ${error.message}`;
+    }
+}
+
+// Setup collapsible main sections
+function setupMainSectionToggles() {
+    const mainSections = document.querySelectorAll('.main-section');
+
+    mainSections.forEach(section => {
+        const header = section.querySelector('.main-header');
+        const list = section.querySelector('.file-list');
+        const toggle = header.querySelector('.folder-toggle');
+
+        header.addEventListener('click', () => {
+            const isExpanded = list.style.display !== 'none';
+            list.style.display = isExpanded ? 'none' : 'block';
+            toggle.textContent = isExpanded ? '▶' : '▼';
+        });
+
+        // Expand by default
+        list.style.display = 'block';
+        toggle.textContent = '▼';
+    });
+}
 
 // Build a tree structure from file list
 function buildFileTree(files) {
@@ -50,11 +155,8 @@ function buildFileTree(files) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    renderFileList();
+    discoverFiles();
     setupSearch();
-
-    // Load first file by default (optional)
-    // loadFile(fileManifest.agentReports[0].path);
 });
 
 // Render file tree recursively
@@ -131,6 +233,10 @@ function renderFileList() {
     const agentReportsList = document.getElementById('agentReportsList');
     const brainList = document.getElementById('brainList');
 
+    // Clear existing content
+    agentReportsList.innerHTML = '';
+    brainList.innerHTML = '';
+
     // Render Agent Reports (flat structure)
     fileManifest.agentReports.forEach(file => {
         const li = document.createElement('li');
@@ -166,6 +272,7 @@ function setupSearch() {
 function filterFiles(searchTerm) {
     const allLinks = document.querySelectorAll('.file-link');
     const allFolders = document.querySelectorAll('.folder-item');
+    const mainSections = document.querySelectorAll('.main-section');
 
     if (searchTerm === '') {
         // Show all files and folders
@@ -175,6 +282,9 @@ function filterFiles(searchTerm) {
         });
         allFolders.forEach(folder => {
             folder.style.display = 'block';
+        });
+        mainSections.forEach(section => {
+            section.style.display = 'block';
         });
         return;
     }
@@ -195,23 +305,44 @@ function filterFiles(searchTerm) {
             let item = link.closest('.file-item');
             if (item) {
                 item.style.display = 'block';
-                // Show all parent folders
+                // Show all parent folders and main sections
                 let parent = item.parentElement;
-                while (parent && parent.classList.contains('file-list')) {
-                    let folderItem = parent.closest('.folder-item');
-                    if (folderItem) {
-                        folderItem.style.display = 'block';
-                        // Expand the folder
-                        let ul = folderItem.querySelector('ul');
-                        if (ul) ul.style.display = 'block';
-                        let toggle = folderItem.querySelector('.folder-toggle');
-                        if (toggle) toggle.textContent = '▼';
-                        parent = folderItem.parentElement;
+                while (parent) {
+                    if (parent.classList.contains('file-list')) {
+                        let folderItem = parent.closest('.folder-item');
+                        if (folderItem) {
+                            folderItem.style.display = 'block';
+                            // Expand the folder
+                            let ul = folderItem.querySelector('ul');
+                            if (ul) ul.style.display = 'block';
+                            let toggle = folderItem.querySelector('.folder-toggle');
+                            if (toggle) toggle.textContent = '▼';
+                            parent = folderItem.parentElement;
+                        } else {
+                            // Check if it's a main section
+                            let mainSection = parent.closest('.main-section');
+                            if (mainSection) {
+                                mainSection.style.display = 'block';
+                                let list = mainSection.querySelector('.file-list');
+                                if (list) list.style.display = 'block';
+                                let toggle = mainSection.querySelector('.folder-toggle');
+                                if (toggle) toggle.textContent = '▼';
+                            }
+                            break;
+                        }
                     } else {
-                        break;
+                        parent = parent.parentElement;
                     }
                 }
             }
+        }
+    });
+
+    // Hide main sections that have no visible files
+    mainSections.forEach(section => {
+        const visibleFiles = section.querySelectorAll('.file-item[style="display: block;"]');
+        if (visibleFiles.length === 0) {
+            section.style.display = 'none';
         }
     });
 }
@@ -230,6 +361,16 @@ function expandParentFolders(element) {
             }
             parent = folderItem.parentElement.closest('.file-list');
         } else {
+            // Expand main section if needed
+            const mainSection = parent.closest('.main-section');
+            if (mainSection) {
+                const list = mainSection.querySelector('.file-list');
+                if (list && list.style.display === 'none') {
+                    list.style.display = 'block';
+                    const toggle = mainSection.querySelector('.folder-toggle');
+                    if (toggle) toggle.textContent = '▼';
+                }
+            }
             break;
         }
     }
@@ -291,7 +432,7 @@ async function loadFile(filePath, linkElement) {
 // Handle hash-based navigation (for direct links)
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.slice(1); // Remove #
-    if (hash) {
+    if (hash && fileManifest.agentReports.length > 0) {
         // Find file by name in manifest
         const allFiles = [...fileManifest.agentReports, ...fileManifest.brain];
         const file = allFiles.find(f => f.name === hash || f.path.includes(hash));

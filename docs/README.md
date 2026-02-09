@@ -38,8 +38,23 @@ Then open `http://localhost:8000` in your browser.
 - `index.html` - Main HTML file
 - `styles.css` - Styling
 - `app.js` - JavaScript for file navigation and markdown rendering
+- `generate-manifest.js` - Script to automatically generate the file manifest
 - `README.md` - This file
 
 ## Adding New Files
 
-When you add new markdown files to `Agent_Reports` or `Brain` folders, update the `fileManifest` object in `app.js` to include the new files.
+**No action needed!** The website automatically discovers all markdown files when it loads.
+
+The site uses GitHub's API to:
+- Automatically scan the `Agent_Reports` and `Brain` folders
+- Find all `.md` files recursively
+- Display them with the correct folder structure
+- Update in real-time when you add new files
+
+Just add your markdown files to the folders and push to GitHub. The website will automatically show them on the next page load!
+
+### Note
+
+- Files are discovered using GitHub's public API (no authentication needed for public repos)
+- The site fetches files when the page loads
+- Main sections (Agent Reports and Brain) are collapsible - click the arrow to expand/collapse
