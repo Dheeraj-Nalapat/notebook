@@ -260,6 +260,18 @@ function renderFileTree(container, tree, level = 0) {
             folderHeader.appendChild(folderToggle);
             folderHeader.appendChild(folderName);
 
+            // Make the entire folder header clickable (not just the toggle)
+            folderHeader.addEventListener('click', (e) => {
+                // Only toggle if clicking on the header itself, not the toggle button
+                // (the toggle button has its own handler that stops propagation)
+                if (e.target === folderHeader || e.target === folderName) {
+                    const ul = folderItem.querySelector('ul');
+                    const isExpanded = ul.style.display !== 'none';
+                    ul.style.display = isExpanded ? 'none' : 'block';
+                    folderToggle.textContent = isExpanded ? '▶' : '▼';
+                }
+            });
+
             const folderContent = document.createElement('ul');
             folderContent.className = 'file-list nested';
             folderContent.style.display = 'none'; // Collapsed by default
