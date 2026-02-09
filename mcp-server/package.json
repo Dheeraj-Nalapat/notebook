@@ -1,0 +1,20 @@
+{
+    "name": "agent-reports-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP server for reading files in mcp-server folder and writing to Agent_Reports",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "keywords": [
+        "mcp",
+        "server",
+        "agent-reports"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.5.0"
+    }
+}

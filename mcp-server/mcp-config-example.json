@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "agent-reports": {
+            "command": "node",
+            "args": [
+                "/home/dheerajnalapat/notebook/mcp-server/index.js"
+            ]
+        }
+    }
+}
