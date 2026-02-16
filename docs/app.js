@@ -13,7 +13,7 @@ const getApiUrl = (path = '') => {
 
 // Store discovered files
 let fileManifest = {
-    agentReports: [],
+    notebook: [],
     brain: []
 };
 
@@ -76,19 +76,19 @@ async function discoverFiles() {
     try {
         console.log('Fetching files from GitHub API...');
         // Fetch files from both folders in parallel
-        const [agentReports, brain] = await Promise.all([
-            fetchMarkdownFiles('Agent_Reports'),
+        const [notebook, brain] = await Promise.all([
+            fetchMarkdownFiles('NoteBook'),
             fetchMarkdownFiles('Brain')
         ]);
 
-        console.log('Agent Reports found:', agentReports.length);
+        console.log('NoteBook found:', notebook.length);
         console.log('Brain files found:', brain.length);
 
-        // Process Agent Reports - remove 'Agent_Reports/' prefix from folder
-        fileManifest.agentReports = agentReports.map(file => ({
+        // Process NoteBook - remove 'NoteBook/' prefix from folder
+        fileManifest.notebook = notebook.map(file => ({
             name: file.name,
             path: file.path,
-            folder: file.folder ? file.folder.replace(/^Agent_Reports\//, '').replace(/^Agent_Reports$/, '') : ''
+            folder: file.folder ? file.folder.replace(/^NoteBook\//, '').replace(/^NoteBook$/, '') : ''
         }));
 
         // Process Brain files - remove 'Brain/' prefix from folder
@@ -102,7 +102,7 @@ async function discoverFiles() {
         });
 
         // Sort files
-        fileManifest.agentReports.sort((a, b) => a.name.localeCompare(b.name));
+        fileManifest.notebook.sort((a, b) => a.name.localeCompare(b.name));
         fileManifest.brain.sort((a, b) => {
             if (a.folder !== b.folder) {
                 return a.folder.localeCompare(b.folder);
@@ -115,7 +115,7 @@ async function discoverFiles() {
         setupMainSectionToggles();
 
         // Show empty state if no files found
-        if (fileManifest.agentReports.length === 0 && fileManifest.brain.length === 0) {
+        if (fileManifest.notebook.length === 0 && fileManifest.brain.length === 0) {
             if (emptyStateEl) {
                 emptyStateEl.classList.remove('hidden');
                 emptyStateEl.querySelector('p').textContent = 'No markdown files found.';
@@ -288,25 +288,25 @@ function renderFileTree(container, tree, level = 0) {
 
 // Render file lists in sidebar
 function renderFileList() {
-    const agentReportsList = document.getElementById('agentReportsList');
+    const notebookList = document.getElementById('notebookList');
     const brainList = document.getElementById('brainList');
 
-    if (!agentReportsList || !brainList) {
+    if (!notebookList || !brainList) {
         console.error('File list containers not found');
         return;
     }
 
     // Clear existing content
-    agentReportsList.innerHTML = '';
+    notebookList.innerHTML = '';
     brainList.innerHTML = '';
 
     console.log('Rendering file list...', {
-        agentReports: fileManifest.agentReports.length,
+        notebook: fileManifest.notebook.length,
         brain: fileManifest.brain.length
     });
 
-    // Render Agent Reports (flat structure)
-    fileManifest.agentReports.forEach(file => {
+    // Render NoteBook (flat structure)
+    fileManifest.notebook.forEach(file => {
         const li = document.createElement('li');
         li.className = 'file-item';
         const a = document.createElement('a');
@@ -322,7 +322,7 @@ function renderFileList() {
             loadFile(getRawUrl(file.path), a);
         });
         li.appendChild(a);
-        agentReportsList.appendChild(li);
+        notebookList.appendChild(li);
     });
 
     // Render Brain files (nested structure)
@@ -551,9 +551,9 @@ async function loadFile(filePath, linkElement) {
 // Handle hash-based navigation (for direct links)
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.slice(1); // Remove #
-    if (hash && fileManifest.agentReports.length > 0) {
+    if (hash && fileManifest.notebook.length > 0) {
         // Find file by name in manifest
-        const allFiles = [...fileManifest.agentReports, ...fileManifest.brain];
+        const allFiles = [...fileManifest.notebook, ...fileManifest.brain];
         const file = allFiles.find(f => f.name === hash || f.path.includes(hash));
         if (file) {
             const link = document.querySelector(`a[data-path="${file.path}"]`);

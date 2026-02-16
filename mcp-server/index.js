@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 
 // Define allowed directories
 const SERVER_DIR = resolve(__dirname);
-const AGENT_REPORTS_DIR = resolve(__dirname, "..", "Agent_Reports");
+const NOTEBOOK_DIR = resolve(__dirname, "..", "NoteBook");
 
 // Security: Validate that a path is within the allowed directory
 function isPathAllowed(filePath, allowedDir) {
@@ -38,21 +38,21 @@ function validateReadPath(filePath) {
     return resolve(SERVER_DIR, relative(SERVER_DIR, resolve(filePath)));
 }
 
-// Security: Validate write path (only within Agent_Reports)
+// Security: Validate write path (only within NoteBook)
 function validateWritePath(filePath) {
-    if (!isPathAllowed(filePath, AGENT_REPORTS_DIR)) {
+    if (!isPathAllowed(filePath, NOTEBOOK_DIR)) {
         throw new Error(
-            `Access denied: Cannot write files outside of ${AGENT_REPORTS_DIR}`
+            `Access denied: Cannot write files outside of ${NOTEBOOK_DIR}`
         );
     }
-    return resolve(AGENT_REPORTS_DIR, relative(AGENT_REPORTS_DIR, resolve(filePath)));
+    return resolve(NOTEBOOK_DIR, relative(NOTEBOOK_DIR, resolve(filePath)));
 }
 
-class AgentReportsServer {
+class NoteBookServer {
     constructor() {
         this.server = new Server(
             {
-                name: "agent-reports-mcp-server",
+                name: "notebook-mcp-server",
                 version: "1.0.0",
             },
             {
@@ -104,14 +104,14 @@ class AgentReportsServer {
                 {
                     name: "write_report",
                     description:
-                        "Write a report file to the Agent_Reports directory. Can only write to Agent_Reports folder.",
+                        "Write a report file to the NoteBook directory. Can only write to NoteBook folder.",
                     inputSchema: {
                         type: "object",
                         properties: {
                             filename: {
                                 type: "string",
                                 description:
-                                    "Filename for the report (will be written to Agent_Reports directory).",
+                                    "Filename for the report (will be written to NoteBook directory).",
                             },
                             content: {
                                 type: "string",
@@ -201,7 +201,7 @@ class AgentReportsServer {
                             throw new Error("Filename and content parameters are required");
                         }
                         const validatedPath = validateWritePath(
-                            join(AGENT_REPORTS_DIR, args.filename)
+                            join(NOTEBOOK_DIR, args.filename)
                         );
                         await writeFile(validatedPath, args.content, "utf-8");
 
@@ -264,9 +264,9 @@ class AgentReportsServer {
 
     async run() {
         await this.server.connect(this.transport);
-        console.error("Agent Reports MCP server running on stdio");
+        console.error("NoteBook MCP server running on stdio");
     }
 }
 
-const server = new AgentReportsServer();
+const server = new NoteBookServer();
 server.run().catch(console.error);

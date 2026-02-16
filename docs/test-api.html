@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub API Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .success {
+            border-left: 4px solid #28a745;
+        }
+
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .status-code {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .status-200 {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-404 {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-403 {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-other {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .loading {
+            color: #007bff;
+        }
+
+        .summary {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .summary h3 {
+            margin-top: 0;
+        }
+
+        .summary-item {
+            margin: 5px 0;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>GitHub API Test Suite</h1>
+        <p>This test file will call the same APIs used in app.js and display the responses.</p>
+
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Same configuration as app.js
+        const REPO_OWNER = 'dheeraj-nalapat';
+        const REPO_NAME = 'notebook';
+        const BRANCH = 'main';
+
+        const getRawUrl = (filePath) => {
+            return `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${filePath}`;
+        };
+
+        const getApiUrl = (path = '') => {
+            return `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${BRANCH}`;
+        };
+
+        let testResults = [];
+
+        function addResult(title, content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const section = document.createElement('div');
+            section.className = `test-section ${type}`;
+
+            const titleEl = document.createElement('h3');
+            titleEl.textContent = title;
+            section.appendChild(titleEl);
+
+            const resultEl = document.createElement('div');
+            resultEl.className = `result ${type}`;
+            resultEl.innerHTML = content;
+            section.appendChild(resultEl);
+
+            resultsDiv.appendChild(section);
+
+            testResults.push({ title, content, type });
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            testResults = [];
+        }
+
+        function getStatusClass(status) {
+            if (status === 200) return 'status-200';
+            if (status === 404) return 'status-404';
+            if (status === 403) return 'status-403';
+            return 'status-other';
+        }
+
+        async function testApiCall(url, description) {
+            addResult(`${description} - Testing...`, `<div class="loading">Fetching: ${url}</div>`, 'info');
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url);
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                const statusClass = getStatusClass(response.status);
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                let responseData;
+                const contentType = response.headers.get('content-type');
+
+                if (contentType && contentType.includes('application/json')) {
+                    responseData = await response.json();
+                } else {
+                    const text = await response.text();
+                    try {
+                        responseData = JSON.parse(text);
+                    } catch {
+                        responseData = text.substring(0, 500) + (text.length > 500 ? '... (truncated)' : '');
+                    }
+                }
+
+                const resultHtml = `
+                    <div>
+                        <span class="status-code ${statusClass}">${response.status} ${response.statusText}</span>
+                        <span>Duration: ${duration}ms</span>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>URL:</strong> <code>${url}</code>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Response Headers:</strong>
+                        <pre>${JSON.stringify(headers, null, 2)}</pre>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Response Body:</strong>
+                        <pre>${JSON.stringify(responseData, null, 2)}</pre>
+                    </div>
+                `;
+
+                const type = response.ok ? 'success' : 'error';
+                // Update the last result
+                const sections = document.querySelectorAll('.test-section');
+                if (sections.length > 0) {
+                    const lastSection = sections[sections.length - 1];
+                    lastSection.className = `test-section ${type}`;
+                    lastSection.querySelector('.result').className = `result ${type}`;
+                    lastSection.querySelector('.result').innerHTML = resultHtml;
+                }
+
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers,
+                    data: responseData,
+                    duration,
+                    url
+                };
+
+            } catch (error) {
+                const resultHtml = `
+                    <div class="status-code status-other">Error</div>
+                    <div style="margin-top: 10px;">
+                        <strong>URL:</strong> <code>${url}</code>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Error:</strong> <pre>${error.message}</pre>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <strong>Stack:</strong> <pre>${error.stack}</pre>
+                    </div>
+                `;
+
+                // Update the last result
+                const sections = document.querySelectorAll('.test-section');
+                if (sections.length > 0) {
+                    const lastSection = sections[sections.length - 1];
+                    lastSection.className = 'test-section error';
+                    lastSection.querySelector('.result').className = 'result error';
+                    lastSection.querySelector('.result').innerHTML = resultHtml;
+                }
+
+                return {
+                    success: false,
+                    error: error.message,
+                    url
+                };
+            }
+        }
+
+        async function testRootDirectory() {
+            return await testApiCall(
+                getApiUrl(''),
+                'Test 1: Root Directory Contents'
+            );
+        }
+
+        async function testNoteBookFolder() {
+            return await testApiCall(
+                getApiUrl('NoteBook'),
+                'Test 2: NoteBook Folder'
+            );
+        }
+
+        async function testBrainFolder() {
+            return await testApiCall(
+                getApiUrl('Brain'),
+                'Test 3: Brain Folder'
+            );
+        }
+
+        async function testRawFile() {
+            // Try to get a sample file if we know one exists
+            const samplePath = 'NoteBook/sample.md';
+            return await testApiCall(
+                getRawUrl(samplePath),
+                'Test 4: Raw File Access (sample)'
+            );
+        }
+
+        async function testRateLimit() {
+            return await testApiCall(
+                'https://api.github.com/rate_limit',
+                'Test 5: Rate Limit Status'
+            );
+        }
+
+        async function testRepositoryInfo() {
+            return await testApiCall(
+                `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`,
+                'Test 6: Repository Information'
+            );
+        }
+
+        async function runAllTests() {
+            clearResults();
+            addResult('Test Suite Started', 'Running all API tests...', 'info');
+
+            const results = {
+                root: null,
+                notebook: null,
+                brain: null,
+                rawFile: null,
+                rateLimit: null,
+                repoInfo: null
+            };
+
+            // Run tests sequentially to see results in order
+            results.rateLimit = await testRateLimit();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            results.repoInfo = await testRepositoryInfo();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            results.root = await testRootDirectory();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            results.notebook = await testNoteBookFolder();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            results.brain = await testBrainFolder();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            results.rawFile = await testRawFile();
+
+            // Generate summary
+            generateSummary(results);
+        }
+
+        function generateSummary(results) {
+            const summary = document.createElement('div');
+            summary.className = 'summary';
+
+            let summaryHtml = '<h3>Test Summary</h3>';
+
+            const tests = [
+                { key: 'rateLimit', name: 'Rate Limit Check', result: results.rateLimit },
+                { key: 'repoInfo', name: 'Repository Info', result: results.repoInfo },
+                { key: 'root', name: 'Root Directory', result: results.root },
+                { key: 'notebook', name: 'NoteBook Folder', result: results.notebook },
+                { key: 'brain', name: 'Brain Folder', result: results.brain },
+                { key: 'rawFile', name: 'Raw File Access', result: results.rawFile }
+            ];
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            tests.forEach(test => {
+                if (test.result) {
+                    if (test.result.success) {
+                        successCount++;
+                        summaryHtml += `<div class="summary-item">✅ ${test.name}: SUCCESS (${test.result.status})</div>`;
+                    } else {
+                        errorCount++;
+                        const status = test.result.status || 'Error';
+                        summaryHtml += `<div class="summary-item">❌ ${test.name}: FAILED (${status})</div>`;
+                    }
+                } else {
+                    errorCount++;
+                    summaryHtml += `<div class="summary-item">❌ ${test.name}: NOT RUN</div>`;
+                }
+            });
+
+            summaryHtml += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc;">`;
+            summaryHtml += `<strong>Total: ${successCount} passed, ${errorCount} failed</strong>`;
+            summaryHtml += `</div>`;
+
+            // Check for common issues
+            summaryHtml += `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc;">`;
+            summaryHtml += `<h4>Potential Issues:</h4>`;
+
+            if (results.rateLimit && results.rateLimit.data) {
+                const remaining = results.rateLimit.data.resources?.core?.remaining;
+                const limit = results.rateLimit.data.resources?.core?.limit;
+                if (remaining !== undefined) {
+                    summaryHtml += `<div class="summary-item">Rate Limit: ${remaining}/${limit} requests remaining</div>`;
+                    if (remaining < 10) {
+                        summaryHtml += `<div class="summary-item" style="color: #dc3545;">⚠️ WARNING: Rate limit is very low!</div>`;
+                    }
+                }
+            }
+
+            if (results.notebook && results.notebook.status === 404) {
+                summaryHtml += `<div class="summary-item" style="color: #dc3545;">⚠️ NoteBook folder not found (404)</div>`;
+            }
+
+            if (results.brain && results.brain.status === 404) {
+                summaryHtml += `<div class="summary-item" style="color: #dc3545;">⚠️ Brain folder not found (404)</div>`;
+            }
+
+            if (results.repoInfo && results.repoInfo.status === 404) {
+                summaryHtml += `<div class="summary-item" style="color: #dc3545;">⚠️ Repository not found. Check REPO_OWNER and REPO_NAME</div>`;
+            }
+
+            if (results.repoInfo && results.repoInfo.status === 403) {
+                summaryHtml += `<div class="summary-item" style="color: #dc3545;">⚠️ Access forbidden (403). Repository might be private or rate limited.</div>`;
+            }
+
+            summaryHtml += `</div>`;
+
+            summary.innerHTML = summaryHtml;
+            document.getElementById('results').appendChild(summary);
+        }
+    </script>
+</body>
+
+</html>

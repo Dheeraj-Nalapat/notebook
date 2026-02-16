@@ -2,7 +2,7 @@
 
 /**
  * Script to automatically generate the file manifest for the static website
- * Run this script whenever you add new markdown files to Agent_Reports or Brain folders
+ * Run this script whenever you add new markdown files to NoteBook or Brain folders
  * 
  * Usage: node generate-manifest.js
  */
@@ -41,19 +41,19 @@ function findMarkdownFiles(dir, basePath = '') {
 }
 
 function generateManifest() {
-    const agentReportsDir = path.join(REPO_ROOT, 'Agent_Reports');
+    const notebookDir = path.join(REPO_ROOT, 'NoteBook');
     const brainDir = path.join(REPO_ROOT, 'Brain');
     
-    const agentReports = [];
+    const notebook = [];
     const brain = [];
     
-    // Find files in Agent_Reports
-    if (fs.existsSync(agentReportsDir)) {
-        const files = findMarkdownFiles(agentReportsDir, 'Agent_Reports');
+    // Find files in NoteBook
+    if (fs.existsSync(notebookDir)) {
+        const files = findMarkdownFiles(notebookDir, 'NoteBook');
         files.forEach(file => {
-            // Remove 'Agent_Reports/' prefix from folder path
-            const folder = file.folder.replace(/^Agent_Reports\//, '').replace(/^Agent_Reports$/, '');
-            agentReports.push({
+            // Remove 'NoteBook/' prefix from folder path
+            const folder = file.folder.replace(/^NoteBook\//, '').replace(/^NoteBook$/, '');
+            notebook.push({
                 name: file.name,
                 path: file.path,
                 folder: folder
@@ -76,7 +76,7 @@ function generateManifest() {
     }
     
     // Sort files
-    agentReports.sort((a, b) => a.name.localeCompare(b.name));
+    notebook.sort((a, b) => a.name.localeCompare(b.name));
     brain.sort((a, b) => {
         // Sort by folder first, then by name
         if (a.folder !== b.folder) {
@@ -103,7 +103,7 @@ const getRawUrl = (filePath) => {
 
 // File manifest with folder structure preserved
 const fileManifest = {
-    agentReports: ${JSON.stringify(agentReports, null, 8)},
+    notebook: ${JSON.stringify(notebook, null, 8)},
     brain: ${JSON.stringify(brain, null, 8)}
 };`;
     
@@ -158,10 +158,10 @@ const fileManifest = {
     fs.writeFileSync(appJsPath, appJsContent, 'utf8');
     
     console.log('✅ Manifest generated successfully!');
-    console.log(`   Found ${agentReports.length} files in Agent_Reports`);
+    console.log(`   Found ${notebook.length} files in NoteBook`);
     console.log(`   Found ${brain.length} files in Brain`);
-    console.log('\n   Files in Agent_Reports:');
-    agentReports.forEach(f => console.log(`     - ${f.name}`));
+    console.log('\n   Files in NoteBook:');
+    notebook.forEach(f => console.log(`     - ${f.name}`));
     console.log('\n   Files in Brain:');
     brain.forEach(f => console.log(`     - ${f.folder ? f.folder + '/' : ''}${f.name}`));
 }

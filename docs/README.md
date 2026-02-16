@@ -1,6 +1,6 @@
 # Notebook Static Website
 
-A static website for browsing markdown files from the `Agent_Reports` and `Brain` folders.
+A static website for browsing markdown files from the `NoteBook` and `Brain` folders.
 
 ## Setup for GitHub Pages
 
@@ -45,7 +45,7 @@ Then open `http://localhost:8000` in your browser.
 
 **After adding new markdown files, you need to regenerate the manifest:**
 
-1. Add your markdown files to the `Agent_Reports` or `Brain` folders
+1. Add your markdown files to the `NoteBook` or `Brain` folders
 2. Run the manifest generator:
    ```bash
    node docs/generate-manifest.js
@@ -64,5 +64,5 @@ The website loads files from a static `manifest.json` file to avoid GitHub API r
 ### Note
 
 - The manifest file (`manifest.json`) contains a list of all markdown files
-- Main sections (Agent Reports and Brain) are collapsible - click the arrow to expand/collapse
+- Main sections (NoteBook and Brain) are collapsible - click the arrow to expand/collapse
 - Files are still loaded from GitHub's raw content API (no rate limits for raw content)
