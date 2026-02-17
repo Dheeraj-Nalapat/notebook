@@ -1,11 +1,11 @@
-# Agent Reports MCP Server
+# NoteBook MCP Server
 
-A secure MCP (Model Context Protocol) server that allows reading files from the `mcp-server` directory and writing reports to the `Agent_Reports` directory.
+A secure MCP (Model Context Protocol) server that allows reading files from the `mcp-server` directory and writing reports to the `NoteBook` directory.
 
 ## Security Features
 
 - **Read Access**: Can only read files within the `mcp-server` directory
-- **Write Access**: Can only write files to the `Agent_Reports` directory
+- **Write Access**: Can only write files to the `NoteBook` directory
 - **Path Validation**: All paths are validated to prevent directory traversal attacks
 - **Sandboxed**: Cannot access any files outside of the allowed directories
 
@@ -38,7 +38,7 @@ Add this to your Cursor MCP settings (usually in `~/.cursor/mcp.json` or similar
 ```json
 {
   "mcpServers": {
-    "agent-reports": {
+    "notebook": {
       "command": "node",
       "args": ["/home/dheerajnalapat/notebook/mcp-server/index.js"]
     }
@@ -58,7 +58,7 @@ Add this to your Cursor MCP settings (usually in `~/.cursor/mcp.json` or similar
    - Parameters:
      - `path` (required): Relative path to the file from mcp-server directory
 
-3. **write_report** - Write a report file to Agent_Reports directory
+3. **write_report** - Write a report file to NoteBook directory
    - Parameters:
      - `filename` (required): Filename for the report
      - `content` (required): Content to write to the report file
@@ -71,7 +71,7 @@ Add this to your Cursor MCP settings (usually in `~/.cursor/mcp.json` or similar
 
 Once configured in Cursor, you can use the MCP server in other projects:
 
-- Ask the agent to write a report: "Write a report to Agent_Reports about the project status"
+- Ask the agent to write a report: "Write a report to NoteBook about the project status"
 - Read files from mcp-server: "Read the config file from mcp-server"
 - List available files: "List all files in the mcp-server directory"
 
@@ -83,6 +83,6 @@ notebook/
 │   ├── index.js
 │   ├── package.json
 │   └── README.md
-└── Agent_Reports/        # Allowed write directory
+└── NoteBook/            # Allowed write directory
     └── (reports written here)
 ```

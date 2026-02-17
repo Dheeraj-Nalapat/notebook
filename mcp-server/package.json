@@ -1,7 +1,7 @@
 {
-    "name": "agent-reports-mcp-server",
+    "name": "notebook-mcp-server",
     "version": "1.0.0",
-    "description": "MCP server for reading files in mcp-server folder and writing to Agent_Reports",
+    "description": "MCP server for reading files in mcp-server folder and writing to NoteBook",
     "type": "module",
     "main": "index.js",
     "scripts": {
@@ -10,7 +10,7 @@
     "keywords": [
         "mcp",
         "server",
-        "agent-reports"
+        "notebook"
     ],
     "author": "",
     "license": "MIT",
